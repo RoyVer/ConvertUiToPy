@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>464</width>
+    <height>283</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Verdana,sans-serif</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>GUI converter</string>
+  </property>
+  <property name="windowIcon">
+   <iconset theme="Icon.ico"/>
+  </property>
+  <property name="autoFillBackground">
+   <bool>false</bool>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">/* Algemene instellingen voor het dark thema */
+QWidget {
+    background-color: #000000; /* Zwarte achtergrond */
+    color: #FFFFFF; /* Witte tekst */
+    font-family: Verdana, sans-serif; /* Verdana font */
+}
+
+/* Specifieke instellingen voor labels */
+QLabel {
+    color: #FFFFFF; /* Witte tekst voor labels */
+}
+
+/* Instellingen voor knoppen */
+QPushButton {
+    background-color: #FFA500; /* Oranje achtergrond voor knoppen */
+    color: #000000; /* Zwarte tekst op knoppen */
+    border-radius: 8px; /* Afgeronde hoeken */
+    padding: 5px 10px; /* Optioneel: wat padding toevoegen voor een betere uitstraling */
+    font-family: Verdana, sans-serif; /* Verdana font voor knoppen */
+}
+
+/* Optioneel: Hover effect voor knoppen */
+QPushButton:hover {
+    background-color: #FF8C00; /* Iets donkerdere oranje achtergrond bij hover */
+}
+
+/* Instellingen voor verzonken, 3D-effect op tekstvelden */
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #FFFFFF; /* Witte achtergrond voor tekstvelden */
+    color: #000000; /* Zwarte tekst */
+    border: 2px inset #888888; /* Grijze verzonken rand voor een 3D-effect */
+    padding: 2px; /* Wat ruimte tussen de tekst en de rand */
+    font-family: Verdana, sans-serif; /* Verdana font */
+}
+
+/* Instellingen voor verzonken, 3D-effect op QListView */
+QListView {
+    background-color: #FFFFFF; /* Witte achtergrond voor QListView */
+    color: #000000; /* Zwarte tekst */
+    border: 2px inset #888888; /* Grijze verzonken rand voor een 3D-effect */
+    padding: 2px; /* Wat ruimte tussen de items en de rand */
+    font-family: Verdana, sans-serif; /* Verdana font */
+}
+</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="LblSource">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>261</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Source path - File to convert from .ui</string>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="txtDownloadLink">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>30</y>
+      <width>441</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>0</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="sizeIncrement">
+     <size>
+      <width>-1</width>
+      <height>0</height>
+     </size>
+    </property>
+    <property name="baseSize">
+     <size>
+      <width>1</width>
+      <height>1</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnSelectSourceFile">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>70</y>
+      <width>441</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Select source file</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnSelectDestination">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>170</y>
+      <width>441</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Select file</string>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="txtFilePath">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>130</y>
+      <width>441</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="baseSize">
+     <size>
+      <width>1</width>
+      <height>1</height>
+     </size>
+    </property>
+   </widget>
+   <widget class="QLabel" name="lblDestination">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>110</y>
+      <width>241</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Destination path - File to convert to .py</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btnExecute">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>210</y>
+      <width>441</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Execute</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>464</width>
+     <height>20</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

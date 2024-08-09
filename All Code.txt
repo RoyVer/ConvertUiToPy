@@ -1,0 +1,361 @@
+--------------------------------------------------
+Filename: error_handler.py
+Relative path: error_handler.py
+--------------------------------------------------
+# error_handler.py
+import os
+import inspect
+from datetime import datetime
+
+class ErrorHandler:
+    def __init__(self):
+        self.logdir = self.load_config()
+        self.ensure_directory_exists(self.logdir)
+
+    def load_config(self):
+        return "Logs"
+
+    def ensure_directory_exists(self, directory):
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+    def get_timestamp(self, format="%Y%m%d_%H%M%S"):
+        return datetime.now().strftime(format)
+
+    async def get_caller_info(self):
+        stack = inspect.stack()
+        caller = stack[2]
+        return f"{os.path.basename(caller.filename)}:{caller.lineno}"
+
+    async def compile_message(self, level, message, error_details=None):
+        caller_info = await self.get_caller_info()
+        log_message = f"{self.get_timestamp()} - {level} - Origin {caller_info}:\n\t{message}\n"
+        if error_details:
+            log_message += f"Details:\n\t\t{error_details}\n"
+        return log_message
+
+    def log_error(self, message, error_details=None):
+        log_message = self.compile_message("ERROR", message, error_details)
+        self.write_log(log_message)
+        print(log_message)
+
+    def write_log(self, message):
+        log_file = os.path.join(self.logdir, f"{self.get_timestamp(format='%Y%m%d')}.log")
+        with open(log_file, "a") as f:
+            f.write(message)
+
+
+--------------------------------------------------
+Filename: file_handler.py
+Relative path: file_handler.py
+--------------------------------------------------
+# file_handler.py
+import subprocess
+
+class FileHandler:
+    def __init__(self, error_handler):
+        self.error_handler = error_handler
+
+    def convert_ui_to_py(self, ui_file, py_file):
+        try:
+            result = subprocess.run(['pyuic5', '-o', py_file, ui_file], capture_output=True, text=True)
+            if result.returncode != 0:
+                raise RuntimeError(result.stderr)
+        except Exception as e:
+            self.error_handler.log_error("Failed to convert UI to Python", e)
+            raise
+
+
+--------------------------------------------------
+Filename: gui_handler.py
+Relative path: gui_handler.py
+--------------------------------------------------
+import sys
+import subprocess
+import os
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QPushButton, QFileDialog, QVBoxLayout,
+    QWidget, QMessageBox, QLineEdit
+)
+from error_handler import ErrorHandler
+
+class MainWindow(QMainWindow):
+    def __init__(self, error_handler):
+        super().__init__()
+        self.error_handler = error_handler
+        self.init_ui()
+
+    def init_ui(self):
+        self.setWindowTitle('ConvertUiToPy')
+        self.setGeometry(300, 300, 600, 200)
+
+        # Create buttons
+        self.select_ui_btn = QPushButton('Select .gui File', self)
+        self.select_ui_btn.clicked.connect(self.select_ui_file)
+
+        self.ui_file_path = QLineEdit(self)
+        self.ui_file_path.setReadOnly(True)
+
+        self.select_py_btn = QPushButton('Select Output .py File', self)
+        self.select_py_btn.clicked.connect(self.select_py_file)
+
+        self.py_file_path = QLineEdit(self)
+        self.py_file_path.setReadOnly(True)
+
+        self.execute_btn = QPushButton('Execute Conversion', self)
+        self.execute_btn.clicked.connect(self.convert_ui_to_py)
+
+        # Layout setup
+        layout = QVBoxLayout()
+        layout.addWidget(self.select_ui_btn)
+        layout.addWidget(self.ui_file_path)
+        layout.addWidget(self.select_py_btn)
+        layout.addWidget(self.py_file_path)
+        layout.addWidget(self.execute_btn)
+
+        container = QWidget()
+        container.setLayout(layout)
+        self.setCentralWidget(container)
+
+        # Variables to store file paths
+        self.ui_file = None
+        self.py_file = None
+
+    def select_ui_file(self):
+        self.ui_file, _ = QFileDialog.getOpenFileName(self, "Select UI File", "", "UI Files (*.gui)")
+        if self.ui_file:
+            self.ui_file_path.setText(self.ui_file)
+
+    def select_py_file(self):
+        self.py_file, _ = QFileDialog.getSaveFileName(self, "Save Python File", "", "Python Files (*.py)")
+        if self.py_file:
+            self.py_file_path.setText(self.py_file)
+
+    def convert_ui_to_py(self):
+        if not self.ui_file or not self.py_file:
+            QMessageBox.warning(self, "Error", "Both UI and Python file paths must be selected.")
+            return
+
+        try:
+            result = subprocess.run(['pyuic5', '-o', self.py_file, self.ui_file], capture_output=True, text=True)
+            if result.returncode == 0:
+                QMessageBox.information(self, "Success", "Conversion completed successfully!")
+                # Open the directory of the output file in Explorer
+                output_dir = os.path.dirname(self.py_file)
+                os.startfile(output_dir)
+            else:
+                raise RuntimeError(result.stderr)
+        except Exception as e:
+            self.error_handler.log_error("Conversion failed", e)
+            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    error_handler = ErrorHandler()
+    window = MainWindow(error_handler)
+    window.show()
+    sys.exit(app.exec_())
+
+
+--------------------------------------------------
+Filename: main.py
+Relative path: main.py
+--------------------------------------------------
+import sys
+import subprocess
+import os
+import warnings
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
+from PyQt5.QtGui import QIcon  # Import QIcon for setting the window icon
+from gui.main_gui import Ui_MainWindow
+from error_handler import ErrorHandler
+
+# Suppress the DeprecationWarning
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+class MainApp(QMainWindow):
+    def __init__(self, error_handler):
+        super().__init__()
+        self.ui = Ui_MainWindow()
+        self.ui.setupUi(self)
+        self.error_handler = error_handler
+
+        # Set the window icon
+        self.setWindowIcon(QIcon('Images/Icon.ico'))
+
+        # Connect the buttons to their respective functions
+        self.ui.btnSelectSourceFile.clicked.connect(self.select_ui_file)
+        self.ui.btnSelectDestination.clicked.connect(self.select_py_file)
+        self.ui.btnExecute.clicked.connect(self.convert_ui_to_py)
+
+        # Variables to store file paths
+        self.ui_file = None
+        self.py_file = None
+
+    def select_ui_file(self):
+        self.ui_file, _ = QFileDialog.getOpenFileName(self, "Select UI File", "", "UI Files (*.gui)")
+        if self.ui_file:
+            self.ui.txtDownloadLink.setPlainText(self.ui_file)
+
+    def select_py_file(self):
+        self.py_file, _ = QFileDialog.getSaveFileName(self, "Save Python File", "", "Python Files (*.py)")
+        if self.py_file:
+            self.ui.txtFilePath.setPlainText(self.py_file)
+
+    def convert_ui_to_py(self):
+        if not self.ui_file or not self.py_file:
+            QMessageBox.warning(self, "Error", "Both UI and Python file paths must be selected.")
+            return
+
+        try:
+            result = subprocess.run(['pyuic5', '-o', self.py_file, self.ui_file], capture_output=True, text=True)
+            if result.returncode == 0:
+                QMessageBox.information(self, "Success", "Conversion completed successfully!")
+                # Open the directory of the output file in Explorer
+                output_dir = os.path.dirname(self.py_file)
+                os.startfile(output_dir)
+            else:
+                raise RuntimeError(result.stderr)
+        except Exception as e:
+            self.error_handler.log_error("Conversion failed", e)
+            QMessageBox.critical(self, "Error", f"An error occurred: {str(e)}")
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    error_handler = ErrorHandler()
+    window = MainApp(error_handler)
+    window.show()
+    sys.exit(app.exec_())
+
+
+--------------------------------------------------
+Filename: main_gui.py
+Relative path: gui\main_gui.py
+--------------------------------------------------
+# -*- coding: utf-8 -*-
+
+# Form implementation generated from reading gui file 'E:/Development/ConvertUiToPy/gui/main.gui'
+#
+# Created by: PyQt5 UI code generator 5.15.9
+#
+# WARNING: Any manual changes made to this file will be lost when pyuic5 is
+# run again.  Do not edit this file unless you know what you are doing.
+
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+
+
+class Ui_MainWindow(object):
+    def setupUi(self, MainWindow):
+        MainWindow.setObjectName("MainWindow")
+        MainWindow.resize(464, 283)
+        font = QtGui.QFont()
+        font.setFamily("Verdana,sans-serif")
+        MainWindow.setFont(font)
+        icon = QtGui.QIcon.fromTheme("Icon.ico")
+        MainWindow.setWindowIcon(icon)
+        MainWindow.setAutoFillBackground(False)
+        MainWindow.setStyleSheet("/* Algemene instellingen voor het dark thema */\n"
+"QWidget {\n"
+"    background-color: #000000; /* Zwarte achtergrond */\n"
+"    color: #FFFFFF; /* Witte tekst */\n"
+"    font-family: Verdana, sans-serif; /* Verdana font */\n"
+"}\n"
+"\n"
+"/* Specifieke instellingen voor labels */\n"
+"QLabel {\n"
+"    color: #FFFFFF; /* Witte tekst voor labels */\n"
+"}\n"
+"\n"
+"/* Instellingen voor knoppen */\n"
+"QPushButton {\n"
+"    background-color: #FFA500; /* Oranje achtergrond voor knoppen */\n"
+"    color: #000000; /* Zwarte tekst op knoppen */\n"
+"    border-radius: 8px; /* Afgeronde hoeken */\n"
+"    padding: 5px 10px; /* Optioneel: wat padding toevoegen voor een betere uitstraling */\n"
+"    font-family: Verdana, sans-serif; /* Verdana font voor knoppen */\n"
+"}\n"
+"\n"
+"/* Optioneel: Hover effect voor knoppen */\n"
+"QPushButton:hover {\n"
+"    background-color: #FF8C00; /* Iets donkerdere oranje achtergrond bij hover */\n"
+"}\n"
+"\n"
+"/* Instellingen voor verzonken, 3D-effect op tekstvelden */\n"
+"QLineEdit, QTextEdit, QPlainTextEdit {\n"
+"    background-color: #FFFFFF; /* Witte achtergrond voor tekstvelden */\n"
+"    color: #000000; /* Zwarte tekst */\n"
+"    border: 2px inset #888888; /* Grijze verzonken rand voor een 3D-effect */\n"
+"    padding: 2px; /* Wat ruimte tussen de tekst en de rand */\n"
+"    font-family: Verdana, sans-serif; /* Verdana font */\n"
+"}\n"
+"\n"
+"/* Instellingen voor verzonken, 3D-effect op QListView */\n"
+"QListView {\n"
+"    background-color: #FFFFFF; /* Witte achtergrond voor QListView */\n"
+"    color: #000000; /* Zwarte tekst */\n"
+"    border: 2px inset #888888; /* Grijze verzonken rand voor een 3D-effect */\n"
+"    padding: 2px; /* Wat ruimte tussen de items en de rand */\n"
+"    font-family: Verdana, sans-serif; /* Verdana font */\n"
+"}\n"
+"")
+        self.centralwidget = QtWidgets.QWidget(MainWindow)
+        self.centralwidget.setObjectName("centralwidget")
+        self.LblSource = QtWidgets.QLabel(self.centralwidget)
+        self.LblSource.setGeometry(QtCore.QRect(10, 10, 261, 16))
+        self.LblSource.setObjectName("LblSource")
+        self.txtDownloadLink = QtWidgets.QTextEdit(self.centralwidget)
+        self.txtDownloadLink.setGeometry(QtCore.QRect(10, 30, 441, 31))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.txtDownloadLink.sizePolicy().hasHeightForWidth())
+        self.txtDownloadLink.setSizePolicy(sizePolicy)
+        self.txtDownloadLink.setMinimumSize(QtCore.QSize(0, 0))
+        self.txtDownloadLink.setSizeIncrement(QtCore.QSize(-1, 0))
+        self.txtDownloadLink.setBaseSize(QtCore.QSize(1, 1))
+        self.txtDownloadLink.setObjectName("txtDownloadLink")
+        self.btnSelectSourceFile = QtWidgets.QPushButton(self.centralwidget)
+        self.btnSelectSourceFile.setGeometry(QtCore.QRect(10, 70, 441, 31))
+        self.btnSelectSourceFile.setObjectName("btnSelectSourceFile")
+        self.btnSelectDestination = QtWidgets.QPushButton(self.centralwidget)
+        self.btnSelectDestination.setGeometry(QtCore.QRect(10, 170, 441, 31))
+        self.btnSelectDestination.setObjectName("btnSelectDestination")
+        self.txtFilePath = QtWidgets.QTextEdit(self.centralwidget)
+        self.txtFilePath.setGeometry(QtCore.QRect(10, 130, 441, 31))
+        self.txtFilePath.setBaseSize(QtCore.QSize(1, 1))
+        self.txtFilePath.setObjectName("txtFilePath")
+        self.lblDestination = QtWidgets.QLabel(self.centralwidget)
+        self.lblDestination.setGeometry(QtCore.QRect(10, 110, 241, 21))
+        self.lblDestination.setObjectName("lblDestination")
+        self.btnExecute = QtWidgets.QPushButton(self.centralwidget)
+        self.btnExecute.setGeometry(QtCore.QRect(10, 210, 441, 31))
+        self.btnExecute.setObjectName("btnExecute")
+        MainWindow.setCentralWidget(self.centralwidget)
+        self.menubar = QtWidgets.QMenuBar(MainWindow)
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 464, 20))
+        self.menubar.setObjectName("menubar")
+        MainWindow.setMenuBar(self.menubar)
+        self.statusbar = QtWidgets.QStatusBar(MainWindow)
+        self.statusbar.setObjectName("statusbar")
+        MainWindow.setStatusBar(self.statusbar)
+
+        self.retranslateUi(MainWindow)
+        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+
+    def retranslateUi(self, MainWindow):
+        _translate = QtCore.QCoreApplication.translate
+        MainWindow.setWindowTitle(_translate("MainWindow", "GUI converter"))
+        self.LblSource.setText(_translate("MainWindow", "Source path - File to convert from .gui"))
+        self.btnSelectSourceFile.setText(_translate("MainWindow", "Select source file"))
+        self.btnSelectDestination.setText(_translate("MainWindow", "Select file"))
+        self.lblDestination.setText(_translate("MainWindow", "Destination path - File to convert to .py"))
+        self.btnExecute.setText(_translate("MainWindow", "Execute"))
+
+
+--------------------------------------------------
+Filename: __init__.py
+Relative path: gui\__init__.py
+--------------------------------------------------
+
+

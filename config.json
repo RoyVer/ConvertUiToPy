@@ -1,0 +1,5 @@
+{
+    "log_directory": "logs",
+    "icon_path": "resources/images/Icon.ico",
+    "window_title": "ConvertUiToPy"
+}
