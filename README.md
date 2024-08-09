@@ -42,8 +42,5 @@ A notification will confirm if the conversion was successful.
 #### Error Handling
 Errors are logged to the Logs directory and displayed in the console.
 
-#### Contributing
-Feel free to fork this repository and submit pull requests. All contributions are welcome!
-
 #### License
 This project is licensed under the MIT License. See the [LICENSE](LICENCE "LICENSE") file for details.
