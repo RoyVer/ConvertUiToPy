@@ -3,6 +3,7 @@ import os
 from PyQt5.QtWidgets import QMainWindow, QDesktopWidget, QMessageBox, QFileDialog
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt
+
 from .gui_main_window import Ui_MainWindow
 from ..utils.file_handler import FileHandler
 from ..utils.error_handler import ErrorHandler
@@ -23,16 +24,16 @@ class MainWindowHelper(QMainWindow):
 
     def init_ui(self):
         self.setWindowTitle(self.config_manager.get_window_title())
-        self.setFixedSize(465, 285)
-        self.center_on_screen()
 
-        # Load icon using absolute path
-        icon_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), '..', '..', self.config_manager.get_icon_path()))
+        # Overriding the window icon set by the generated file
+        icon_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'logo.ico'))
         if os.path.exists(icon_path):
             self.setWindowIcon(QIcon(icon_path))
         else:
             self.error_handler.log_error(f"Icon file not found: {icon_path}")
+
+        self.setFixedSize(465, 285)
+        self.center_on_screen()
 
     def center_on_screen(self):
         screen = QDesktopWidget().screenNumber(QDesktopWidget().cursor().pos())
